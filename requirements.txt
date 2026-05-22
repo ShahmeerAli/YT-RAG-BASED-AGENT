@@ -26,7 +26,7 @@ faiss-cpu
 tiktoken
 
 #YT API
-youtube-transcript-api
+
 
 # Machine Learning Utilities
 numpy
