@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from langchain_huggingface import ChatHuggingFace,HuggingFaceEndpoint,HuggingFaceEmbeddings
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableParallel,RunnableLambda,RunnablePassthrough
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -68,13 +70,26 @@ question="is the topic about aliens discussed in the video? if yes then explain.
 
 ret=retrivers.invoke(question)
 
-context_text="\n\n".join(doc.page_content for doc in ret)
+def format_docs(ret):
+    context_text="\n\n".join(doc.page_content for doc in ret)
+    return context_text
 
-final_prompt=prompt.invoke({'context':context_text,'question':question})
 
-answer=model.invoke(final_prompt)
 
-print(answer.content)
+#building the chains
+
+parallel_chain=RunnableParallel({
+    'context':retrivers | RunnableLambda(format_docs),
+    'question':RunnablePassthrough()
+})
+
+parser=StrOutputParser()
+
+main_chain=parallel_chain | prompt |model|parser
+
+answer=main_chain.invoke(question)
+
+print(answer)
 
 
 
