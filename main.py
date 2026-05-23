@@ -54,5 +54,27 @@ vector_store=FAISS.from_documents(
 
 retrivers=vector_store.as_retriever(search_type="similarity",search_kwargs={"k":3})
 
-print(retrivers.invoke("what does the endpoints of the line on the top represent?"))
+#adding the prompt template
+prompt=PromptTemplate(
+    template="""You are a helpful assistant.
+    "Answer only from the context.
+    "if the context is not enough just say you dont know.
+    {context}
+    Question:{question}""",
+    input_variables=['context','question']
+)
+
+question="is the topic about aliens discussed in the video? if yes then explain."
+
+ret=retrivers.invoke(question)
+
+context_text="\n\n".join(doc.page_content for doc in ret)
+
+final_prompt=prompt.invoke({'context':context_text,'question':question})
+
+answer=model.invoke(final_prompt)
+
+print(answer.content)
+
+
 
